@@ -26,14 +26,14 @@ Specifically:
   kill_previous_builds:
     image: dankirberger/build-surge-protector
     secrets: [drone_token]
-    drone_host: https://drone6.target.com
+    drone_host: YOUR_DRONE_URL # e.g. https://drone.company.com
     when:
     # You might only want to run this on certain events, for example, 
     # you might not want to cancel an in progress deployment
       event: [push, deployment, tag, pull_request]
 ```
 
-Where `drone_token` is a secret containing your token from here: https://drone6.target.com/account/token
+Where `drone_token` is a secret containing your token from here: https://<YOUR_DRONE_URL>/account/token
 
 Use a token for a NUID account.
 
