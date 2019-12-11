@@ -16,9 +16,9 @@ jobs:
       run: GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o build-surge-protector
 #    - name: Test
 #      run: go test ./...
-
-  publish:
-    runs-on: ubuntu-latest
-    steps:
     - name: Build the Docker image
+      on:
+        push:
+          branches:
+            - fake
       run: docker build . --file Dockerfile --tag my-image-name:$(date +%s)
