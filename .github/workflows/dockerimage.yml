@@ -1,6 +1,9 @@
 name: Build and publish
 
-on: [push]
+on:
+  push:
+    branches:
+      - master
 
 jobs:
   build:
@@ -17,8 +20,4 @@ jobs:
 #    - name: Test
 #      run: go test ./...
     - name: Build the Docker image
-      on:
-        push:
-          branches:
-            - fake
       run: docker build . --file Dockerfile --tag my-image-name:$(date +%s)
