@@ -12,8 +12,10 @@ jobs:
         go-version: 1.13.x
     - name: Checkout code
       uses: actions/checkout@v1
-    - name: Test
-      run: go test ./...
+    - name: Build
+      run: GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o build-surge-protector
+#    - name: Test
+#      run: go test ./...
 
   publish:
     runs-on: ubuntu-latest
