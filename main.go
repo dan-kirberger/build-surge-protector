@@ -54,8 +54,8 @@ func main() {
 
 
 	if buildType == "push" {
-		fmt.Println("Cancelling old build", recentBuilds[0].Number)
-		client.BuildCancel(orgName, repoName, int(recentBuilds[0].Number))
+		fmt.Println("Cancelling old build", recentBuilds[1].Number)
+		client.BuildCancel(orgName, repoName, int(recentBuilds[1].Number))
 		fmt.Println("Donezo")
 	}
 }
