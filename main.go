@@ -6,6 +6,7 @@ import (
 	"golang.org/x/net/context"
 	"golang.org/x/oauth2"
 	"os"
+	"strconv"
 )
 
 func getEnv(varName string) string {
@@ -23,15 +24,15 @@ func checkEnv(varName string) {
 
 func main() {
 	var token = getEnv("DRONE_TOKEN")
-	var host  = getEnv("PLUGIN_DRONE_HOST")
+	var host = getEnv("PLUGIN_DRONE_HOST")
 	var orgName = getEnv("DRONE_REPO_OWNER")
 	var repoName = getEnv("DRONE_REPO_NAME")
 
 	var buildType = getEnv("DRONE_BUILD_EVENT")
-	//var tag = getEnv("DRONE_TAG")
-	//var branch = getEnv("DRONE_BRANCH")
-	//var pr = getEnv("DRONE_PULL_REQUEST")
-	//var deployTarget = getEnv("DRONE_DEPLOY_TO")
+	var tag = getEnv("DRONE_TAG")
+	var branch = getEnv("DRONE_BRANCH")
+	var pr = getEnv("DRONE_PULL_REQUEST")
+	var deployTarget = getEnv("DRONE_DEPLOY_TO")
 
 	fmt.Println("Testing drone token...")
 	config := new(oauth2.Config)
@@ -47,15 +48,52 @@ func main() {
 	user, _ := client.Self()
 	fmt.Println("Authenticated as", user.Login)
 
-	var options = drone.ListOptions{Page:0, Size:50}
+	var options = drone.ListOptions{Page: 0, Size: 50}
 	var recentBuilds, _ = client.BuildList(orgName, repoName, options)
-	fmt.Println("Found", len(recentBuilds), "builds")
 
+	switch buildType {
+	case "push":
+		test := func(b *drone.Build) bool { return b.Event == "push" && b.Ref == branch }
+		buildsToKill := filter(recentBuilds, test)
+		killBuilds(client, orgName, repoName, buildsToKill)
+	case "pull_request":
+		test := func(b *drone.Build) bool { return b.Event == "pull_request" && b.Ref == "refs/pull/"+pr+"/head" }
+		buildsToKill := filter(recentBuilds, test)
+		killBuilds(client, orgName, repoName, buildsToKill)
+	case "tag":
+		test := func(b *drone.Build) bool { return b.Event == "tag" && b.Ref == "refs/tags/"+tag }
+		buildsToKill := filter(recentBuilds, test)
+		killBuilds(client, orgName, repoName, buildsToKill)
+	case "deployment":
+		test := func(b *drone.Build) bool { return b.Event == "deployment" && b.Target == deployTarget }
+		buildsToKill := filter(recentBuilds, test)
+		killBuilds(client, orgName, repoName, buildsToKill)
+	default:
+		fmt.Println("Unknown build type", buildType)
+	}
 
+	fmt.Println("Donezo")
+}
 
-	if buildType == "push" {
-		fmt.Println("Cancelling old build", recentBuilds[1].Number)
-		client.BuildCancel(orgName, repoName, int(recentBuilds[1].Number))
-		fmt.Println("Donezo")
+func filter(builds []*drone.Build, test func(*drone.Build) bool) (ret []int64) {
+	var currentBuildNumber = getEnv("DRONE_BUILD_NUMBER")
+	for _, build := range builds {
+		if test(build) &&
+			(build.Status == "running" || build.Status == "pending") &&
+			strconv.Itoa(int(build.Number)) != currentBuildNumber {
+			ret = append(ret, build.Number)
+		}
+	}
+	return
+}
+
+func killBuilds(client drone.Client, org string, repo string, buildNumbers []int64) {
+	fmt.Println("Cancelling", len(buildNumbers), "builds")
+	for _, b := range buildNumbers {
+		fmt.Println("Killing build", b)
+		err := client.BuildCancel(org, repo, int(b))
+		if err != nil {
+			fmt.Println("Failed to cancel", org, repo, b)
+		}
 	}
 }
