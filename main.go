@@ -53,7 +53,7 @@ func main() {
 
 	switch buildType {
 	case "push":
-		test := func(b *drone.Build) bool { return b.Event == "push" && b.Ref == branch }
+		test := func(b *drone.Build) bool { return b.Event == "push" && b.Ref == "refs/heads/" + branch }
 		buildsToKill := filter(recentBuilds, test)
 		killBuilds(client, orgName, repoName, buildsToKill)
 	case "pull_request":
@@ -76,11 +76,8 @@ func main() {
 }
 
 func filter(builds []*drone.Build, test func(*drone.Build) bool) (ret []int64) {
-	var currentBuildNumber = getEnv("DRONE_BUILD_NUMBER")
 	for _, build := range builds {
-		if test(build) &&
-			(build.Status == "running" || build.Status == "pending") &&
-			strconv.Itoa(int(build.Number)) != currentBuildNumber {
+		if test(build) && isRunning(build) && isKillable(build) {
 			ret = append(ret, build.Number)
 		}
 	}
@@ -96,4 +93,15 @@ func killBuilds(client drone.Client, org string, repo string, buildNumbers []int
 			fmt.Println("Failed to cancel", org, repo, b)
 		}
 	}
+}
+
+func isRunning(build *drone.Build) bool {
+	return build.Status == "running" || build.Status == "pending"
+}
+
+func isKillable(build *drone.Build) bool {
+	var currentBuildNumberEnv = getEnv("DRONE_BUILD_NUMBER")
+	var currentBuildNumber, _ = strconv.Atoi(currentBuildNumberEnv)
+
+	return int(build.Number) < currentBuildNumber
 }
