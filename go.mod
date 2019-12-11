@@ -1,4 +1,4 @@
-module github.com/dan-kirberger/build-surge-protector/
+module github.com/dan-kirberger/build-surge-protector
 
 go 1.12
 

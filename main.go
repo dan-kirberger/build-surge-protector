@@ -26,25 +26,36 @@ func main() {
 	var host  = getEnv("PLUGIN_DRONE_HOST")
 	var orgName = getEnv("DRONE_REPO_OWNER")
 	var repoName = getEnv("DRONE_REPO_NAME")
-	//DRONE_REPO_OWNER
-	//DRONE_REPO_NAME
-	println("here i am")
+
+	var buildType = getEnv("DRONE_BUILD_EVENT")
+	//var tag = getEnv("DRONE_TAG")
+	//var branch = getEnv("DRONE_BRANCH")
+	//var pr = getEnv("DRONE_PULL_REQUEST")
+	//var deployTarget = getEnv("DRONE_DEPLOY_TO")
+
+	fmt.Println("Testing drone token...")
 	config := new(oauth2.Config)
-	auther := config.Client(
+	auth := config.Client(
 		context.Background(),
 		&oauth2.Token{
 			AccessToken: token,
 		},
 	)
 
-	// create the drone client with authenticator
-	client := drone.NewClient(host, auther)
+	client := drone.NewClient(host, auth)
 
-	// gets the current user
-	user, err := client.Self()
-	fmt.Println(user, err)
+	user, _ := client.Self()
+	fmt.Println("Authenticated as", user.Login)
 
-	// gets the named repository information
-	repo, err := client.Repo(orgName, repoName)
-	fmt.Println(repo, err)
+	var options = drone.ListOptions{Page:0, Size:50}
+	var recentBuilds, _ = client.BuildList(orgName, repoName, options)
+	fmt.Println("Found", len(recentBuilds), "builds")
+
+
+
+	if buildType == "push" {
+		fmt.Println("Cancelling old build", recentBuilds[0].Number)
+		client.BuildCancel(orgName, repoName, int(recentBuilds[0].Number))
+		fmt.Println("Donezo")
+	}
 }
