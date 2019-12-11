@@ -22,7 +22,7 @@ func checkEnv(varName string) {
 }
 
 func main() {
-	var token = getEnv("PLUGIN_TOKEN")
+	var token = getEnv("PLUGIN_DRONE_TOKEN")
 	var host  = getEnv("PLUGIN_DRONE_HOST")
 	var orgName = getEnv("DRONE_REPO_OWNER")
 	var repoName = getEnv("DRONE_REPO_NAME")
