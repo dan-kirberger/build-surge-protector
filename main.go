@@ -65,7 +65,7 @@ func main() {
 		buildsToKill := filter(recentBuilds, test)
 		killBuilds(client, orgName, repoName, buildsToKill)
 	case "deployment":
-		test := func(b *drone.Build) bool { return b.Event == "deployment" && b.Target == deployTarget }
+		test := func(b *drone.Build) bool { return b.Event == "deployment" && b.Deploy == deployTarget }
 		buildsToKill := filter(recentBuilds, test)
 		killBuilds(client, orgName, repoName, buildsToKill)
 	default:
